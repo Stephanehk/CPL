@@ -137,6 +137,7 @@ class AgentTrainer(TrajectoryGenerator):
         switch_prob: float = 0.5,
         random_prob: float = 0.5,
         custom_logger: Optional[imit_logger.HierarchicalLogger] = None,
+        train_agent = True
     ) -> None:
         """Initialize the agent trainer.
 
@@ -168,6 +169,7 @@ class AgentTrainer(TrajectoryGenerator):
         self.reward_fn = reward_fn
         self.exploration_frac = exploration_frac
         self.rng = rng
+        self.train_agent = train_agent
 
         # The BufferingWrapper records all trajectories, so we can return
         # them after training. This should come first (before the wrapper that
@@ -215,6 +217,9 @@ class AgentTrainer(TrajectoryGenerator):
             RuntimeError: Transitions left in `self.buffering_wrapper`; call
                 `self.sample` first to clear them.
         """
+
+        if not self.train_agent:
+            return
         n_transitions = self.buffering_wrapper.n_transitions
         if n_transitions:
             raise RuntimeError(
@@ -1499,6 +1504,7 @@ class PreferenceComparisons(base.BaseImitationAlgorithm):
         allow_variable_horizon: bool = False,
         rng: Optional[np.random.Generator] = None,
         query_schedule: Union[str, type_aliases.Schedule] = "hyperbolic",
+        dataset = None
     ) -> None:
         """Initialize the preference comparison trainer.
 
@@ -1651,7 +1657,10 @@ class PreferenceComparisons(base.BaseImitationAlgorithm):
         else:
             raise ValueError(f"Unknown query schedule: {query_schedule}")
 
-        self.dataset = PreferenceDataset(max_size=comparison_queue_size)
+        if dataset is None:
+            self.dataset = PreferenceDataset(max_size=comparison_queue_size)
+        else:
+            self.dataset = dataset
 
     def train(
         self,
